@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="autobahn.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.min.js"></script>
+    <script src="thruway.js"></script>
+
+</head>
+
+
+<body ng-app="MyApp">
+<div ng-controller="MyController">
+    {{ articles }}
+    <ul>
+        <li ng-repeat="message in messages">
+            <div>
+
+                <strong>{{ message.title[0].value }}</strong>
+            </div>
+            <div>
+                <pre>{{ message.body[0].value }}</pre>
+            </div>
+            <div>
+                {{ message.field_test[0].value }}
+            </div>
+            <button ng-click="message.edit = !message.edit">edit</button>
+            <button ng-click="message.$remove()">delete</button>
+            <button ng-click="message.$getRelated()">get related</button>
+            <div ng-show="message.edit">
+                <div><label>Title</label>
+                    <input type="text"
+                           ng-model="message.title[0].value"
+                           ng-blur="message.$save()">
+                </div>
+                <div>
+                    <label>Body</label>
+                    <textarea ng-model="message.body[0].value"
+                              ng-blur="message.$save()"></textarea>
+                </div>
+                <div>
+                    <label>Test Field</label>
+
+                    <input type="text" ng-model="message.field_test[0].value"
+                           ng-blur="message.$save()">
+                </div>
+
+            </div>
+            <hr/>
+        </li>
+    </ul>
+
+    <button ng-click="messages.$add({type:[{target_id:'page'} ]})">Add</button>
+</div>
+
+<script>
+    var myApp = angular.module("MyApp", ["thruway"]);
+
+    function MyController($scope, $thruway) {
+
+        $scope.messages = new $thruway('entity.node.page', {limit: 23, id: 1});
+
+//        $scope.articles = new $thruway('entity.node.article');
+
+    }
+
+</script>
+
+</body>
+
+</html>
