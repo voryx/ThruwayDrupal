@@ -1,0 +1,14 @@
+services:
+  plugin.manager.thruway:
+    class: Drupal\thruway\Plugin\Type\ResourcePluginManager
+    arguments: ['@container.namespaces', '@cache.discovery', '@module_handler']
+  thruway.connection:
+    class: Drupal\thruway\Connection
+  thruway.auth:
+    class: Drupal\thruway\Authentication\AuthProvider
+    arguments: ['@config.factory', '@user.auth',  '@flood', '@entity.manager']
+  thruway.loop:
+    class: React\EventLoop\LoopInterface
+    factory_class: React\EventLoop\Factory
+    factory_method: create
+

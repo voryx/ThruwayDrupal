@@ -1,0 +1,9 @@
+resources:
+  entity:node: ['page', 'article']
+options:
+  url: 'ws://demo.thruway.ws:9090'
+  realm: 'drupalrealm'
+  max_retries: 1000
+  max_retry_delay: 30
+  initial_retry_delay: 3
+  retry_delay_growth: 1.25

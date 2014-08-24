@@ -1,0 +1,11 @@
+# Schema for the configuration files of the Thruway module.
+
+thruway.settings:
+  type: mapping
+  label: 'Thruway settings'
+  mapping:
+    resources:
+      type: sequence
+      label: 'Resources'
+
+

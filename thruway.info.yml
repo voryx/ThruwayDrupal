@@ -1,0 +1,9 @@
+name: Thruway
+type: module
+description: 'Allows you to expose Entities and Controller Actions as WAMP RPC calls'
+package: 'WEB SERVICES'
+
+dependencies:
+  - serialization
+  - rest
+core: '8.x'
