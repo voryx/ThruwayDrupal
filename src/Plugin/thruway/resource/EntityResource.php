@@ -63,7 +63,14 @@ class EntityResource extends ResourceBase
                     unset($entity->{$field_name});
                 }
             }
-            $return[] = $entity->toArray();
+
+            /**
+             * Test stuff
+             */
+            $serializer = \Drupal::service('serializer');
+            $return[] = $serializer->serialize($entity, 'array');
+
+//            $return[] = $entity->toArray();
         }
         return [$return];
     }
@@ -91,7 +98,7 @@ class EntityResource extends ResourceBase
                 unset($entity->{$field_name});
             }
         }
-        return $entity->toArray();
+        return $entity;
     }
 
     /**
@@ -139,12 +146,16 @@ class EntityResource extends ResourceBase
         $this->validate($entity);
         try {
             $entity->save();
+
+            //@todo fix this hack.  When you save, it doesn't load the field defaults, so we need to reload it
+            return $entity::load($entity->id());
+
 //            $this->logger->notice(
 //                'Created entity %type with ID %id.',
 //                array('%type' => $entity->getEntityTypeId(), '%id' => $entity->id())
 //            );
 
-            return $entity->toArray();
+
         } catch (EntityStorageException $e) {
             throw new HttpException(500, t('Internal Server Error'), $e);
         }
@@ -212,7 +223,7 @@ class EntityResource extends ResourceBase
 //            );
 
             // Update responses have an empty body.
-            return $entity->toArray();
+            return $entity;
         } catch (EntityStorageException $e) {
             throw new HttpException(500, t('Internal Server Error'), $e);
         }
@@ -244,7 +255,7 @@ class EntityResource extends ResourceBase
 //            );
 
             // Delete responses have an empty body.
-            return $entity->toArray();
+            return $entity;
         } catch (EntityStorageException $e) {
             throw new HttpException(500, t('Internal Server Error'), $e);
         }
@@ -267,8 +278,6 @@ class EntityResource extends ResourceBase
     {
         try {
 
-            $e = $entity->referencedEntities();
-
             $entities = $this->referencedEntities($entity);
             $return = [];
 
@@ -289,7 +298,7 @@ class EntityResource extends ResourceBase
                         }
 
                         $return["entity.{$entity->getEntityTypeId()}.{$entity->bundle()}"][$entity->uuid(
-                        )][$name] = $entity->toArray();
+                        )][$name] = $entity;
                     }
                 }
             }

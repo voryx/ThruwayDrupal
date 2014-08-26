@@ -11,7 +11,7 @@ function thruway_permission()
 {
     $permissions = array();
     /* @var $manager Drupal\thruway\Plugin\Type\ResourcePluginManager */
-    $manager = \Drupal::service('plugin.manager.thruway');
+    $manager = \Drupal::service('thruway.plugin.manager');
     $resources = \Drupal::config('thruway.settings')->get('resources');
     if ($resources && $enabled = array_intersect_key($manager->getDefinitions(), $resources)) {
         foreach ($enabled as $key => $resource) {
@@ -73,7 +73,7 @@ function _thruway_publish_delete(
 ) {
     return $session->publish(
         "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.remove",
-        [$entity->toArray()],
+        [\Drupal::service('serializer')->serialize($entity, "array")],
         [],
         ["acknowledge" => true]
     );
@@ -88,8 +88,8 @@ function _thruway_publish_delete(
 function thruway_entity_update(Drupal\Core\Entity\EntityInterface $entity)
 {
 
-    $originalArray = $entity->original->toArray();
-    $entityArray = $entity->toArray();
+    $originalArray = \Drupal::service('serializer')->serialize($entity->original, "array");
+    $entityArray = \Drupal::service('serializer')->serialize($entity, "array");
 
     //Get the changes
     $updatedValues = arrayRecursiveDiff(
@@ -191,11 +191,10 @@ function thruway_entity_insert(Drupal\Core\Entity\EntityInterface $entity)
 
 function _thruway_publish_add(
     ClientSession $session,
-    \Drupal\Core\Entity\EntityInterface $entity
-) {
+    \Drupal\Core\Entity\EntityInterface $entity) {
     return $session->publish(
         "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.add",
-        [$entity->toArray()],
+        [\Drupal::service('serializer')->serialize($entity::load($entity->id()), "array")],
         [],
         ["acknowledge" => true]
     );

@@ -47,7 +47,7 @@ class Connection extends \Thruway\Connection
         $loop = \Drupal::service('thruway.loop');
         parent::__construct($this->options, $loop);
 
-        $this->pluginManager = \Drupal::service('plugin.manager.thruway');
+        $this->pluginManager = \Drupal::service('thruway.plugin.manager');
         $this->serializer = \Drupal::service('serializer');
         $this->annotationReader = new AnnotationReader();
         $this->resources = \Drupal::config('thruway.settings')->get('resources');
@@ -182,12 +182,14 @@ class Connection extends \Thruway\Connection
                         && isset($args[0]['type'][0]['target_id'])
                         && $resourceInfo['serialization_class']
                     ) {
-                        //temp hack
-                        $args[0]['type'] = $args[0]['type'][0]['target_id'];
-                        $args[0] = entity_create("node", $args[0]);
+                        //temp hack, the serializer expects type 'value' not 'target_id'
+                        $args[0]['type'][0]['value'] = $args[0]['type'][0]['target_id'];
+//                        $args[0] = entity_create("node", $args[0]);
+                        $args[0] = $this->serializer->deserialize($args[0], $resourceInfo['serialization_class'], "array", ["entity_type"=>$resourceInfo['entity_type']]);
                     }
 
-                    return call_user_func_array([$resourceInstance, $method->getName()], $args);
+                    $data = call_user_func_array([$resourceInstance, $method->getName()], $args);
+                    return $this->serializer->serialize($data, "array");
 
                 } catch (\Exception $e) {
                     //@todo handle exception

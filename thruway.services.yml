@@ -1,5 +1,5 @@
 services:
-  plugin.manager.thruway:
+  thruway.plugin.manager:
     class: Drupal\thruway\Plugin\Type\ResourcePluginManager
     arguments: ['@container.namespaces', '@cache.discovery', '@module_handler']
   thruway.connection:
@@ -11,4 +11,8 @@ services:
     class: React\EventLoop\LoopInterface
     factory_class: React\EventLoop\Factory
     factory_method: create
+  thruway.encoder.xml:
+    class: Drupal\thruway\Encoder\ArrayEncoder
+    tags:
+      - { name: encoder, format: array }
 
