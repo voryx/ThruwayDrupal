@@ -1,18 +1,19 @@
 (function () {
     "use strict";
-    var ThruwayObject;
+    var ThruwayObject, DrupalAuth;
 
-    angular.module("thruway", []);
+    angular.module("thruway", ['ngRoute']);
 
-    angular.module("thruway").factory("$thruway", ["$q", "$parse", "$timeout", "thruwayIndex", "$rootScope",
-        function ($q, $parse, $timeout, thruwayIndex, $rootScope) {
+    angular.module("thruway").factory("$thruway", ["$q", "$parse", "$timeout", "thruwayIndex", "$rootScope", "drupalAuth", "$window",
+        function ($q, $parse, $timeout, thruwayIndex, $rootScope, drupalAuth, $window) {
 
             var connectionPromise, connection, uris = [];
 
             function onchallenge(session, method, extra) {
-                debugger;
                 if (method == 'drupal.drupalrealmdave') {
-                    return {user: "admin", pass: "asdf;2o39pfj"};
+                    return drupalAuth.authenticate(session);
+
+
                 } else {
                     console.log("don't know how to authentication using " + method);
                 }
@@ -20,7 +21,7 @@
 
             // @todo make this configurable
             connection = new autobahn.Connection({
-                url: "ws://demo.thruway.ws:9090",
+                url: "ws://127.0.0.1:9090",
                 realm: 'drupalrealmdave',
                 authmethods: ['drupal.drupalrealmdave'],
                 onchallenge: onchallenge
@@ -33,11 +34,18 @@
                 console.log('connection: ', reason);
                 console.log('connection details: ', details);
 
+                if (details.reason && details.reason == "bad.login") {
+                    $window.localStorage.removeItem('token');
+                    connection.open();
+                }
+
             };
 
             return function (uri, args) {
                 args = args || {};
-                connection.onopen = function (session) {
+                connection.onopen = function (session, details) {
+                    $rootScope.$emit("thruway.open", details);
+
                     console.log('connected');
                     angular.forEach(uris, function (uri) {
                         var ts = new ThruwayObject($q, $parse, $timeout, uri, args, session);
@@ -295,4 +303,43 @@
             return self._object;
         }
     };
+
+    angular.module("thruway").factory("drupalAuth", ["$q", "$rootScope", "$window", "$location", function ($q, $rootScope, $window, $location) {
+
+        return {
+            authenticate: function (session) {
+
+                //check to see if we have a jwt token saved
+                if ($window.localStorage.token) {
+                    return $q.when($window.localStorage.token);
+                }
+
+                var deferred = $q.defer();
+                var lastPath = $location.$$path;
+                var loginInfo;
+
+                $rootScope.$broadcast("thruway.auth", session);
+
+                $rootScope.$on("thruway.login", function (event, message) {
+                    loginInfo = message;
+                    deferred.resolve(loginInfo);
+                    $location.path(lastPath).replace();
+                });
+
+                $rootScope.$on("thruway.open", function (event, message) {
+                    session.call("utils.utils.generateToken", [loginInfo.user, loginInfo.pass]).then(function (token) {
+                        //save the token
+                        $window.localStorage.token = token;
+                    });
+                });
+
+
+                return deferred.promise;
+            }
+
+        };
+
+    }]);
+
+
 })();

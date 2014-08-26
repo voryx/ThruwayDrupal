@@ -33,7 +33,7 @@ class ResourcePluginManager extends DefaultPluginManager {
    *   The module handler to invoke the alter hook with.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    parent::__construct('Plugin/thruway/resource', $namespaces, $module_handler, 'Drupal\thruway\Annotation\ThruwayResource');
+    parent::__construct('Plugin/thruway', $namespaces, $module_handler, 'Drupal\thruway\Annotation\ThruwayResource');
 
     $this->setCacheBackend($cache_backend, 'thruway_plugins');
     $this->alterInfo('thruway_resource');

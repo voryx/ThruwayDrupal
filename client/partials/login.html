@@ -1,0 +1,12 @@
+<form id="login">
+    <h1>Log In</h1>
+    <fieldset id="inputs">
+        <input ng-model="user.user" id="username" type="text" placeholder="Username" autofocus required>
+        <input ng-model="user.pass" id="password" type="password" placeholder="Password" required>
+    </fieldset>
+    <!--<fieldset id="actions">-->
+    <!--<input type="submit" id="submit" value="Log in">-->
+    <!--<a href="">Forgot your password?</a><a href="">Register</a>-->
+    <!--</fieldset>-->
+    <button ng-click="login(user)">Login</button>
+</form>

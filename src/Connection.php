@@ -126,6 +126,11 @@ class Connection extends \Thruway\Connection
             $namePrefix = str_replace(':', '.', $resourceInfo['id']);
             if ($methodAnnotation->type === "procedure") {
 
+                //If there is no bundle set for this resource, then use the prefix again.  Yeah, I know this is kind of stupid.
+                if (!isset($resourceInfo['bundles'])) {
+                    $resourceInfo['bundles'] = [$namePrefix];
+                }
+
                 foreach ($resourceInfo['bundles'] as $bundle) {
                     $this->register($namePrefix, $bundle, $methodAnnotation, $resourceInfo, $resourceInstance, $method);
                 }
