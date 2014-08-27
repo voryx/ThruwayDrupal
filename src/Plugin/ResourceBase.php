@@ -55,7 +55,12 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, array $serializer_formats) {
+  public function __construct(
+    array $configuration,
+    $plugin_id,
+    $plugin_definition,
+    array $serializer_formats
+  ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->serializerFormats = $serializer_formats;
 //    $this->logger = $logger;
@@ -64,7 +69,12 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(
+    ContainerInterface $container,
+    array $configuration,
+    $plugin_id,
+    $plugin_definition
+  ) {
     return new static(
       $configuration,
       $plugin_id,
@@ -87,9 +97,13 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
     foreach ($this->availableMethods() as $method) {
       $lowered_method = strtolower($method);
       $permissions["wampful $lowered_method $this->pluginId"] = array(
-        'title' => t('Access @method on %label resource', array('@method' => $method, '%label' => $definition['label'])),
+        'title' => t(
+          'Access @method on %label resource',
+          array('@method' => $method, '%label' => $definition['label'])
+        ),
       );
     }
+
     return $permissions;
   }
 
@@ -100,8 +114,16 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
     $collection = new RouteCollection();
 
     $definition = $this->getPluginDefinition();
-    $canonical_path = isset($definition['uri_paths']['canonical']) ? $definition['uri_paths']['canonical'] : '/' . strtr($this->pluginId, ':', '/') . '/{id}';
-    $create_path = isset($definition['uri_paths']['http://drupal.org/link-relations/create']) ? $definition['uri_paths']['http://drupal.org/link-relations/create'] : '/' . strtr($this->pluginId, ':', '/');
+    $canonical_path = isset($definition['uri_paths']['canonical']) ? $definition['uri_paths']['canonical'] : '/' . strtr(
+        $this->pluginId,
+        ':',
+        '/'
+      ) . '/{id}';
+    $create_path = isset($definition['uri_paths']['http://drupal.org/link-relations/create']) ? $definition['uri_paths']['http://drupal.org/link-relations/create'] : '/' . strtr(
+        $this->pluginId,
+        ':',
+        '/'
+      );
 
     $route_name = strtr($this->pluginId, ':', '.');
 
@@ -114,14 +136,18 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
           $route->setPattern($create_path);
           // Restrict the incoming HTTP Content-type header to the known
           // serialization formats.
-          $route->addRequirements(array('_content_type_format' => implode('|', $this->serializerFormats)));
+          $route->addRequirements(
+            array('_content_type_format' => implode('|', $this->serializerFormats))
+          );
           $collection->add("$route_name.$method", $route);
           break;
 
         case 'PATCH':
           // Restrict the incoming HTTP Content-type header to the known
           // serialization formats.
-          $route->addRequirements(array('_content_type_format' => implode('|', $this->serializerFormats)));
+          $route->addRequirements(
+            array('_content_type_format' => implode('|', $this->serializerFormats))
+          );
           $collection->add("$route_name.$method", $route);
           break;
 
@@ -181,6 +207,7 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
         $available[] = $method;
       }
     }
+
     return $available;
   }
 
@@ -198,17 +225,20 @@ abstract class ResourceBase extends PluginBase implements ContainerFactoryPlugin
   protected function getBaseRoute($canonical_path, $method) {
     $lower_method = strtolower($method);
 
-    $route = new Route($canonical_path, array(
-      '_controller' => 'Drupal\rest\RequestHandler::handle',
-      // Pass the resource plugin ID along as default property.
-      '_plugin' => $this->pluginId,
-    ), array(
-      // The HTTP method is a requirement for this route.
-      '_method' => $method,
-      '_permission' => "restful $lower_method $this->pluginId",
-    ), array(
-      '_access_mode' => AccessManagerInterface::ACCESS_MODE_ANY,
-    ));
+    $route = new Route(
+      $canonical_path, array(
+        '_controller' => 'Drupal\rest\RequestHandler::handle',
+        // Pass the resource plugin ID along as default property.
+        '_plugin' => $this->pluginId,
+      ), array(
+        // The HTTP method is a requirement for this route.
+        '_method' => $method,
+        '_permission' => "restful $lower_method $this->pluginId",
+      ), array(
+        '_access_mode' => AccessManagerInterface::ACCESS_MODE_ANY,
+      )
+    );
+
     return $route;
   }
 

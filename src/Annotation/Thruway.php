@@ -14,28 +14,27 @@ namespace Drupal\thruway\Annotation;
  *
  * @Annotation('Method')
  */
-class Thruway
-{
+class Thruway {
 
-    /**
-     * The name of the RPC call or subscription
-     *
-     * @var string
-     */
-    public $name;
+  /**
+   * The name of the RPC call or subscription
+   *
+   * @var string
+   */
+  public $name;
 
-    /**
-     * The type: procedure or subscribe
-     *
-     * @var string
-     */
-    public $type;
+  /**
+   * The type: procedure or subscribe
+   *
+   * @var string
+   */
+  public $type;
 
-    /**
-     * Override the resource serialization class
-     *
-     * @var
-     */
-    public $serialization_class;
+  /**
+   * Override the resource serialization class
+   *
+   * @var
+   */
+  public $serialization_class;
 
 }

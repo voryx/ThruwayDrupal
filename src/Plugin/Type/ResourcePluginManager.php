@@ -42,7 +42,7 @@ class ResourcePluginManager extends DefaultPluginManager {
   /**
    * Overrides Drupal\Component\Plugin\PluginManagerBase::getInstance().
    */
-  public function getInstance(array $options){
+  public function getInstance(array $options) {
     if (isset($options['id'])) {
       return $this->createInstance($options['id']);
     }

@@ -20,23 +20,22 @@ use \Drupal\Component\Annotation\Plugin;
  *
  * @Annotation
  */
-class ThruwayResource extends Plugin
-{
+class ThruwayResource extends Plugin {
 
-    /**
-     * The resource plugin ID.
-     *
-     * @var string
-     */
-    public $id;
+  /**
+   * The resource plugin ID.
+   *
+   * @var string
+   */
+  public $id;
 
-    /**
-     * The human-readable name of the resource plugin.
-     *
-     * @ingroup plugin_translatable
-     *
-     * @var \Drupal\Core\Annotation\Translation
-     */
-    public $label;
+  /**
+   * The human-readable name of the resource plugin.
+   *
+   * @ingroup plugin_translatable
+   *
+   * @var \Drupal\Core\Annotation\Translation
+   */
+  public $label;
 
 }

@@ -1,33 +1,36 @@
 <?php
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\thruway\Plugin\thruway\Utils;
+use Drupal\thruway\Plugin\Type\ResourcePluginManager;
 use Thruway\ClientSession;
+use Thruway\Connection;
 
 /**
  * Copied from the rest bundle
  * @todo need to make this actually work
  * Implements hook_permission().
  */
-function thruway_permission()
-{
-    $permissions = array();
-    /* @var $manager Drupal\thruway\Plugin\Type\ResourcePluginManager */
-    $manager = \Drupal::service('thruway.plugin.manager');
-    $resources = \Drupal::config('thruway.settings')->get('resources');
-    if ($resources && $enabled = array_intersect_key($manager->getDefinitions(), $resources)) {
-        foreach ($enabled as $key => $resource) {
-            $plugin = $manager->getInstance(array('id' => $key));
-            $permissions = array_merge($permissions, $plugin->permissions());
-        }
+function thruway_permission() {
+  $permissions = array();
+  /* @var $manager ResourcePluginManager */
+  $manager = Drupal::service('thruway.plugin.manager');
+  $resources = Drupal::config('thruway.settings')->get('resources');
+  if ($resources && $enabled = array_intersect_key($manager->getDefinitions(), $resources)) {
+    foreach ($enabled as $key => $resource) {
+      $plugin = $manager->getInstance(array('id' => $key));
+      $permissions = array_merge($permissions, $plugin->permissions());
     }
-    return $permissions;
+  }
+
+  return $permissions;
 }
 
 
 /**
  *  Implements hook_cache_flush().
  */
-function thruway_cache_flush()
-{
+function thruway_cache_flush() {
 
 }
 
@@ -36,47 +39,44 @@ function thruway_cache_flush()
  *
  * @param $entity
  */
-function thruway_entity_delete(Drupal\Core\Entity\EntityInterface $entity)
-{
-    $connection = \Drupal::service('thruway.connection');
-    if ($session = $connection->getSession()) {
-        _thruway_publish_delete($session, $entity);
-    } else {
-        $options = \Drupal::config('thruway.settings')->get('options');
-        $options['authmethods'] = ["drupal.{$options["realm"]}"];
-        $options['onChallenge'] = '_thruway_on_challenge';
-        $connection = new \Thruway\Connection($options);
-        $connection->on(
-            'open',
-            function (ClientSession $session) use ($connection, $entity) {
-                _thruway_publish_delete($session, $entity)->then(
-                    function () use ($connection) {
-                        $connection->close();
-                    },
-                    function ($error) use ($connection) {
-                        // publish failed
-                        $connection->close();
-                        echo "Publish Error {$error}\n";
-                    }
-                );
-            }
-
+function thruway_entity_delete(EntityInterface $entity) {
+  $connection = Drupal::service('thruway.connection');
+  if ($session = $connection->getSession()) {
+    _thruway_publish_delete($session, $entity);
+  }
+  else {
+    $options = Drupal::config('thruway.settings')->get('options');
+    $options['authmethods'] = ["drupal.{$options["realm"]}"];
+    $options['onChallenge'] = '_thruway_on_challenge';
+    $connection = new Connection($options);
+    $connection->on(
+      'open',
+      function (ClientSession $session) use ($connection, $entity) {
+        _thruway_publish_delete($session, $entity)->then(
+          function () use ($connection) {
+            $connection->close();
+          },
+          function ($error) use ($connection) {
+            // publish failed
+            $connection->close();
+            echo "Publish Error {$error}\n";
+          }
         );
+      }
 
-        $connection->open();
-    }
+    );
+
+    $connection->open();
+  }
 }
 
-function _thruway_publish_delete(
-    ClientSession $session,
-    \Drupal\Core\Entity\EntityInterface $entity
-) {
-    return $session->publish(
-        "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.remove",
-        [\Drupal::service('serializer')->serialize($entity, "array")],
-        [],
-        ["acknowledge" => true]
-    );
+function _thruway_publish_delete(ClientSession $session, EntityInterface $entity) {
+  return $session->publish(
+    "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.remove",
+    [Drupal::service('serializer')->serialize($entity, "array")],
+    [],
+    ["acknowledge" => TRUE]
+  );
 }
 
 /**
@@ -85,66 +85,59 @@ function _thruway_publish_delete(
  * @param $entity
  *
  */
-function thruway_entity_update(Drupal\Core\Entity\EntityInterface $entity)
-{
+function thruway_entity_update(EntityInterface $entity) {
 
-    $originalArray = \Drupal::service('serializer')->serialize($entity->original, "array");
-    $entityArray = \Drupal::service('serializer')->serialize($entity, "array");
+  $originalArray = Drupal::service('serializer')->serialize($entity->original, "array");
+  $entityArray = Drupal::service('serializer')->serialize($entity, "array");
 
-    //Get the changes
-    $updatedValues = arrayRecursiveDiff(
-        $entityArray,
-        $originalArray
+  //Get the changes
+  $updatedValues = arrayRecursiveDiff($entityArray, $originalArray);
+
+  $updatedValues["uuid"] = $entityArray["uuid"];
+
+  $connection = Drupal::service('thruway.connection');
+  if ($session = $connection->getSession()) {
+    _thruway_publish_update($session, $updatedValues, $entity);
+  }
+  else {
+
+    $options = Drupal::config('thruway.settings')->get('options');
+    $options['authmethods'] = ["drupal.{$options["realm"]}"];
+    $options['onChallenge'] = '_thruway_on_challenge';
+    $connection = new Connection($options);
+
+    $connection->on(
+      'open',
+      function (ClientSession $session) use (
+        $connection,
+        $updatedValues,
+        $entity
+      ) {
+        _thruway_publish_update($session, $updatedValues, $entity)->then(
+          function () use ($connection) {
+            $connection->close();
+          },
+          function ($error) use ($connection) {
+            // publish failed
+            $connection->close();
+            echo "Publish Error {$error}\n";
+          }
+        );
+      }
+
     );
 
-    $updatedValues["uuid"] = $entityArray["uuid"];
-
-    $connection = \Drupal::service('thruway.connection');
-    if ($session = $connection->getSession()) {
-        _thruway_publish_update($session, $updatedValues, $entity);
-    } else {
-
-        $options = \Drupal::config('thruway.settings')->get('options');
-        $options['authmethods'] = ["drupal.{$options["realm"]}"];
-        $options['onChallenge'] = '_thruway_on_challenge';
-        $connection = new \Thruway\Connection($options);
-
-        $connection->on(
-            'open',
-            function (ClientSession $session) use (
-                $connection,
-                $updatedValues,
-                $entity
-            ) {
-                _thruway_publish_update($session, $updatedValues, $entity)->then(
-                    function () use ($connection) {
-                        $connection->close();
-                    },
-                    function ($error) use ($connection) {
-                        // publish failed
-                        $connection->close();
-                        echo "Publish Error {$error}\n";
-                    }
-                );
-            }
-
-        );
-
-        $connection->open();
-    }
+    $connection->open();
+  }
 }
 
-function _thruway_publish_update(
-    ClientSession $session,
-    $updatedValues,
-    \Drupal\Core\Entity\EntityInterface $entity
-) {
-    return $session->publish(
-        "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.update",
-        [$updatedValues],
-        [],
-        ["acknowledge" => true]
-    );
+function _thruway_publish_update(ClientSession $session, $updatedValues, EntityInterface $entity) {
+  return $session->publish(
+    "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.update",
+    [$updatedValues],
+    [],
+    ["acknowledge" => TRUE]
+  );
 }
 
 /**
@@ -153,62 +146,59 @@ function _thruway_publish_update(
  * @param $entity
  *
  */
-function thruway_entity_insert(Drupal\Core\Entity\EntityInterface $entity)
-{
+function thruway_entity_insert(EntityInterface $entity) {
 
-    $connection = \Drupal::service('thruway.connection');
-    if ($session = $connection->getSession()) {
-        _thruway_publish_add($session, $entity);
-    } else {
+  $connection = Drupal::service('thruway.connection');
+  if ($session = $connection->getSession()) {
+    _thruway_publish_add($session, $entity);
+  }
+  else {
 
-        $options = \Drupal::config('thruway.settings')->get('options');
-        $options['authmethods'] = ["drupal.{$options["realm"]}"];
-        $options['onChallenge'] = '_thruway_on_challenge';
+    $options = Drupal::config('thruway.settings')->get('options');
+    $options['authmethods'] = ["drupal.{$options["realm"]}"];
+    $options['onChallenge'] = '_thruway_on_challenge';
 
 
-        $connection = new \Thruway\Connection($options);
-        $connection->on(
-            'open',
-            function (ClientSession $session) use ($connection, $entity) {
+    $connection = new Connection($options);
+    $connection->on(
+      'open',
+      function (ClientSession $session) use ($connection, $entity) {
 
-                _thruway_publish_add($session, $entity)->then(
-                    function () use ($connection) {
-                        $connection->close();
-                    },
-                    function ($error) use ($connection) {
-                        // publish failed
-                        $connection->close();
-                        echo "Publish Error {$error}\n";
-                    }
-                );
-            }
-
+        _thruway_publish_add($session, $entity)->then(
+          function () use ($connection) {
+            $connection->close();
+          },
+          function ($error) use ($connection) {
+            // publish failed
+            $connection->close();
+            echo "Publish Error {$error}\n";
+          }
         );
+      }
 
-        $connection->open();
-    }
-}
-
-function _thruway_publish_add(
-    ClientSession $session,
-    \Drupal\Core\Entity\EntityInterface $entity) {
-    return $session->publish(
-        "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.add",
-        [\Drupal::service('serializer')->serialize($entity::load($entity->id()), "array")],
-        [],
-        ["acknowledge" => true]
     );
+
+    $connection->open();
+  }
 }
 
-function _thruway_on_challenge($session, $method)
-{
+function _thruway_publish_add(ClientSession $session, EntityInterface $entity) {
+  return $session->publish(
+    "entity.{$entity->getEntityTypeId()}.{$entity->bundle()}.add",
+    [Drupal::service('serializer')->serialize($entity::load($entity->id()), "array")],
+    [],
+    ["acknowledge" => TRUE]
+  );
+}
 
-    $account = \Drupal::currentUser();
-    if ($account->id() === 0){
-      return "anonymous";
-    }
+function _thruway_on_challenge($session, $method) {
 
-    return \Drupal\thruway\Plugin\thruway\Utils::getToken($account);
+  $account = Drupal::currentUser();
+  if ($account->id() === 0) {
+    return "anonymous";
+  }
+
+  return Utils::getToken($account);
 }
 
 
@@ -217,25 +207,27 @@ function _thruway_on_challenge($session, $method)
  * @param $aArray2
  * @return array
  */
-function arrayRecursiveDiff($aArray1, $aArray2)
-{
-    $aReturn = array();
+function arrayRecursiveDiff($aArray1, $aArray2) {
+  $aReturn = array();
 
-    foreach ($aArray1 as $mKey => $mValue) {
-        if (array_key_exists($mKey, $aArray2)) {
-            if (is_array($mValue)) {
-                $aRecursiveDiff = arrayRecursiveDiff($mValue, $aArray2[$mKey]);
-                if (count($aRecursiveDiff)) {
-                    $aReturn[$mKey] = $aRecursiveDiff;
-                }
-            } else {
-                if ($mValue != $aArray2[$mKey]) {
-                    $aReturn[$mKey] = $mValue;
-                }
-            }
-        } else {
-            $aReturn[$mKey] = $mValue;
+  foreach ($aArray1 as $mKey => $mValue) {
+    if (array_key_exists($mKey, $aArray2)) {
+      if (is_array($mValue)) {
+        $aRecursiveDiff = arrayRecursiveDiff($mValue, $aArray2[$mKey]);
+        if (count($aRecursiveDiff)) {
+          $aReturn[$mKey] = $aRecursiveDiff;
         }
+      }
+      else {
+        if ($mValue != $aArray2[$mKey]) {
+          $aReturn[$mKey] = $mValue;
+        }
+      }
     }
-    return $aReturn;
+    else {
+      $aReturn[$mKey] = $mValue;
+    }
+  }
+
+  return $aReturn;
 }
