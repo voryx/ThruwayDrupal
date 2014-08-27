@@ -12,6 +12,7 @@
             function onchallenge(session, method, extra) {
                 if (method == 'drupal.drupalrealmdave') {
                     return drupalAuth.authenticate(session);
+                    //return drupalAuth.anonymous();
 
 
                 } else {
@@ -335,6 +336,9 @@
 
 
                 return deferred.promise;
+            },
+            anonymous: function () {
+                return "anonymous";
             }
 
         };

@@ -1,5 +1,7 @@
 resources:
   entity:node: ['page', 'article']
+  entity:taxonomy_term:[tags]
+
 options:
   url: 'ws://demo.thruway.ws:9090'
   realm: 'drupalrealm'
@@ -7,3 +9,7 @@ options:
   max_retry_delay: 30
   initial_retry_delay: 3
   retry_delay_growth: 1.25
+
+authentication:
+  allow_anonymous: true
+

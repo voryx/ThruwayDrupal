@@ -202,8 +202,13 @@ function _thruway_publish_add(
 
 function _thruway_on_challenge($session, $method)
 {
-    //@todo Dev testing.  This needs to be removed
-    return ['user' => 'admin', 'pass' => 'sdfasdf9098sdlkjr'];
+
+    $account = \Drupal::currentUser();
+    if ($account->id() === 0){
+      return "anonymous";
+    }
+
+    return \Drupal\thruway\Plugin\thruway\Utils::getToken($account);
 }
 
 
