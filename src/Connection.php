@@ -10,6 +10,7 @@ use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Drupal\Core\Session\SessionManager;
 use Drupal\rest\Plugin\Type\ResourcePluginManager;
+use Drupal\thruway\Logger\ConsoleLogger;
 use Drupal\user\Entity\User;
 use React\EventLoop\Factory;
 use Symfony\Component\Serializer\Serializer;
@@ -45,7 +46,7 @@ class Connection extends \Thruway\Connection
         $this->options = \Drupal::config('thruway.settings')->get('options');
 
         $loop = \Drupal::service('thruway.loop');
-        parent::__construct($this->options, $loop);
+        parent::__construct($this->options, $loop, new ConsoleLogger());
 
         $this->pluginManager = \Drupal::service('thruway.plugin.manager');
         $this->serializer = \Drupal::service('serializer');
@@ -59,6 +60,18 @@ class Connection extends \Thruway\Connection
         );
 
         $this->on('open', [$this, 'onSessionStart']);
+
+        $this->on(
+            'close',
+            function ($reason) {
+                $this->getClient()->getLogger()->alert("Connection closing because: {$reason}");
+            }
+        );
+
+//        $this->getClient()->setLogger(\Drupal::logger("thruway"));
+        $this->getClient()->setLogger(new ConsoleLogger());
+
+
     }
 
 
@@ -69,6 +82,7 @@ class Connection extends \Thruway\Connection
     {
 
         try {
+            $this->getClient()->getLogger()->info("Connection has opened");
             $this->session = $session;
 
             if ($this->resources
@@ -185,10 +199,16 @@ class Connection extends \Thruway\Connection
                         //temp hack, the serializer expects type 'value' not 'target_id'
                         $args[0]['type'][0]['value'] = $args[0]['type'][0]['target_id'];
 //                        $args[0] = entity_create("node", $args[0]);
-                        $args[0] = $this->serializer->deserialize($args[0], $resourceInfo['serialization_class'], "array", ["entity_type"=>$resourceInfo['entity_type']]);
+                        $args[0] = $this->serializer->deserialize(
+                            $args[0],
+                            $resourceInfo['serialization_class'],
+                            "array",
+                            ["entity_type" => $resourceInfo['entity_type']]
+                        );
                     }
 
                     $data = call_user_func_array([$resourceInstance, $method->getName()], $args);
+
                     return $this->serializer->serialize($data, "array");
 
                 } catch (\Exception $e) {
@@ -254,7 +274,9 @@ class Connection extends \Thruway\Connection
 
         if ($startAuth) {
             $authProvider = \Drupal::service('thruway.auth');
-            $authProvider->addTransportProvider(new PawlTransportProvider($this->options['url']));
+            $pawlTransport = new PawlTransportProvider($this->options['url']);
+            $pawlTransport->getManager()->setLogger(new ConsoleLogger());
+            $authProvider->addTransportProvider($pawlTransport);
             $authProvider->start(false);
         }
         $this->getClient()->start();
