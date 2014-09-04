@@ -87,7 +87,22 @@ class EntityResource extends ResourceBase {
    *
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */
-  public function get(EntityInterface $entity) {
+  public function get($uuid) {
+
+      $query = \Drupal::entityQuery("node")
+          ->condition('status', 1)
+          ->condition('uuid', $uuid);
+
+      $ids = $query->execute();
+
+      $entities = entity_load_multiple("node", $ids, true);
+
+      if (!count($entities) > 0){
+          return false;
+      }
+
+      $entity = array_shift($entities);
+
     if (!$entity->access('view')) {
       throw new AccessDeniedHttpException();
     }
