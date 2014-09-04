@@ -24,5 +24,12 @@ function drush_thruway_client()
 {
     /* @var $connection \Drupal\thruway\Connection */
     $connection = \Drupal::service('thruway.connection');
-    $connection->open(true);
+
+    $auth = false;
+    $authentication = \Drupal::config('thruway.settings')->get('authentication');
+    if (isset($authentication['enable_auth']) && $authentication['enable_auth'] === true) {
+        $auth = true;
+    }
+
+    $connection->open($auth);
 }

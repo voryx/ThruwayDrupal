@@ -1,6 +1,7 @@
 resources:
   entity:node: ['page', 'article']
   entity:taxonomy_term:[tags]
+  utils: null
 
 options:
   url: 'ws://demo.thruway.ws:9090'
@@ -12,4 +13,9 @@ options:
 
 authentication:
   allow_anonymous: true
+  enable_auth: true
+
+logging: 'console' # console, drupal or false
+
+
 
