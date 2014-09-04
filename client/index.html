@@ -10,51 +10,62 @@
 </head>
 
 <body ng-app="MyApp">
-<div ng-view>
+
+<div ng-view></div>
 
 
-    <script>
-        var myApp = angular.module("MyApp", ["thruway"]);
+<script>
+    var myApp = angular.module("MyApp", ["thruway", 'ngRoute']);
 
-        function MyController($scope, $thruway, $location) {
+    function MyController($scope, $thruway, $location) {
 
-            $scope.messages = new $thruway('entity.node.page', {limit: 23, id: 1});
+        $scope.messages = $thruway('entity.node.page').getList();
 
 //        $scope.articles = new $thruway('entity.node.article');
 
-            $scope.$on("thruway.auth", function (event, message) {
-                $location.path('/login').replace();
-                $scope.$apply();
-            });
+        $scope.$on("thruway.auth", function (event, message) {
+            $location.path('/login').replace();
+            $scope.$apply();
+        });
 
-        }
+    }
 
-        function LoginCtrl($scope) {
+    function LoginCtrl($scope) {
 
-            $scope.login = function (user) {
-                $scope.$emit("thruway.login", user);
-            };
+        $scope.login = function (user) {
+            $scope.$emit("thruway.login", user);
+        };
 
-        }
+    }
 
 
-        myApp.config(['$routeProvider', function ($routeProvider) {
+    myApp.config(['$routeProvider', function ($routeProvider) {
 
-            $routeProvider
-                    .when('/', {
-                        templateUrl: 'partials/main.html',
-                        controller: 'MyController'
-                    })
-                    .when('/login', {
-                        templateUrl: 'partials/login.html',
-                        controller: 'LoginCtrl'
-                    })
-                    .otherwise({
-                        redirectTo: '/'
-                    });
-        }]);
+        $routeProvider
+                .when('/', {
+                    templateUrl: 'partials/main.html',
+                    controller: 'MyController'
+                })
+                .when('/login', {
+                    templateUrl: 'partials/login.html',
+                    controller: 'LoginCtrl'
+                })
+                .otherwise({
+                    redirectTo: '/'
+                });
+    }]);
 
-    </script>
+
+    myApp.config(function ($provide) {
+        $provide.decorator('thruwaySettings', function ($delegate) {
+            return {
+                url: "ws://demo.thruway.ws:9090",
+                realm: 'drupalrealm'
+            }
+        });
+    });
+
+</script>
 
 </body>
 

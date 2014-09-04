@@ -13,7 +13,7 @@
                 {{ message.field_test[0].value }}
             </div>
             <button ng-click="message.edit = !message.edit">edit</button>
-            <button ng-click="message.$remove()">delete</button>
+            <button ng-click="message.$delete()">delete</button>
             <button ng-click="message.$getRelated()">get related</button>
             <div ng-show="message.edit">
                 <div><label>Title</label>
@@ -38,5 +38,5 @@
         </li>
     </ul>
 
-    <button ng-click="messages.$add({type:[{target_id:'page'} ]})">Add</button>
+    <button ng-click="messages.$add()">Add</button>
 </div>
