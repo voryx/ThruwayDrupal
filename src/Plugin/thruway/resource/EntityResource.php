@@ -299,7 +299,7 @@ class EntityResource extends ResourceBase {
           if (array_key_exists("entity:{$entity->getEntityTypeId()}", $resources)) {
 
             if (!$entity->access('view')) {
-              throw new AccessDeniedHttpException();
+//              throw new AccessDeniedHttpException();
             }
             foreach ($entity as $field_name => $field) {
               if (method_exists($field, 'access') && !$field->access('view')) {

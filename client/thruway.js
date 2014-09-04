@@ -246,6 +246,9 @@
 
                 remove: function (uuid) {
                     delete index[uuid];
+                },
+                scopeApply: function () {
+                    $rootScope.$apply();
                 }
             };
         }
@@ -290,6 +293,10 @@
                 return deferred.promise;
             };
 
+            /**
+             * Related Entities
+             * @returns {*}
+             */
             object.$getRelated = function () {
                 var parentEntity = this;
                 var deferred = self._q.defer();
@@ -303,32 +310,26 @@
                             //add it to the index
                             angular.forEach(uri, function (items, uuid) {
                                 angular.forEach(items, function (item, name) {
-
-                                    thruwayIndex.set(uriKey, uuid, angular.extend(item, thruwayIndex.get(uriKey, uuid)));
+                                    self._index.update(item);
 
                                     angular.forEach(parentEntity[name], function (i, k) {
-
-                                        if (parentEntity[name][k] && parentEntity[name][k]['target_id'] == item.tid[0].value) {
-                                            parentEntity[name][k] = angular.extend(parentEntity[name][k], thruwayIndex.get(uriKey, uuid));
+                                        //Add the related entity to the parent item
+                                        var id = uriKey.substr(uriKey.indexOf(".") + 1).charAt(0) + "id";
+                                        if (parentEntity[name][k] && parentEntity[name][k]['target_id'] == item[id][0].value) {
+                                            parentEntity[name][k] = angular.extend(parentEntity[name][k], self._index.get(uuid));
+                                            self._index.scopeApply();
                                         }
-
-
                                     });
-                                    //Add the related entity to the parent item
-
                                 });
 
                                 //subscribe to updates for the related entities
                                 if (self._session._subscriptions[uriKey + '.update'] == undefined) {
                                     self._session.subscribe(uriKey + '.update', function (res) {
                                         console.log("Update Related Result:", res);
-                                        thruwayIndex.update(uriKey, res[0].uuid[0].value, res[0]);
-
+                                        self._index.update(res[0]);
                                     });
                                     console.log('session', self._session._subscriptions);
                                 }
-
-
                             });
                             console.log('index for ' + uriKey, thruwayIndex.get(uriKey));
                         });
