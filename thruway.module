@@ -93,7 +93,13 @@ function thruway_entity_update(EntityInterface $entity) {
   //Get the changes
   $updatedValues = arrayRecursiveDiff($entityArray, $originalArray);
 
+  //Get the entire field of the items that have changed
+    foreach($updatedValues as $key => $value){
+        $updatedValues[$key] = $entityArray[$key];
+    }
+
   $updatedValues["uuid"] = $entityArray["uuid"];
+
 
   $connection = Drupal::service('thruway.connection');
   if ($session = $connection->getSession()) {
@@ -223,7 +229,8 @@ function arrayRecursiveDiff($aArray1, $aArray2) {
         }
       }
       else {
-        if ($mValue != $aArray2[$mKey]) {
+          //checking for display is a hack.  for some reason, it's flagged as changing, when it hasn't
+        if ($mValue != $aArray2[$mKey] && $mKey != "display") {
           $aReturn[$mKey] = $mValue;
         }
       }
