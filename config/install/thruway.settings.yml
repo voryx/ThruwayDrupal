@@ -1,6 +1,6 @@
 resources:
-  entity:node: ['page', 'article']
-  entity:taxonomy_term:[tags]
+  'entity:node': ['page', 'article']
+  'entity:taxonomy_term': ['tags']
   utils: null
 
 options:

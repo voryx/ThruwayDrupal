@@ -41,6 +41,8 @@ class Connection extends \Thruway\Connection
 
     private $options;
 
+    private $startAuth;
+
     function __construct()
     {
         $this->options = \Drupal::config('thruway.settings')->get('options');
@@ -82,6 +84,15 @@ class Connection extends \Thruway\Connection
     {
 
         try {
+            //Temp place for keep-alive ping.  Every 30 seconds ping the far end and wait 5 seconds for a response
+            $loop = $this->getClient()->getLoop();
+            $loop->addPeriodicTimer(20, function () use ($session, $loop) {
+                $this->getClient()->getLogger()->info("Sending a Ping\n");
+                $session->ping(5);
+                $loop->tick();
+            });
+
+
             $this->getClient()->getLogger()->info("Connection has opened");
             $this->session = $session;
 
@@ -215,12 +226,17 @@ class Connection extends \Thruway\Connection
                     //@todo handle exception
                     print_r($e->getMessage());
 
+                    return [];
+
                 }
 
                 //Should never get here
                 return false;
             },
-            ['discloseCaller' => true]
+            [
+                'discloseCaller' => true,
+                'replace_orphaned_session' => 'yes'
+            ]
         );
     }
 
@@ -272,6 +288,7 @@ class Connection extends \Thruway\Connection
     public function open($startAuth = false)
     {
 
+        $this->startAuth = $startAuth;
         if ($startAuth) {
             $authProvider = \Drupal::service('thruway.auth');
             $pawlTransport = new PawlTransportProvider($this->options['url']);

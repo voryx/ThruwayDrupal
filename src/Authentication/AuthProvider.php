@@ -36,10 +36,10 @@ class AuthProvider extends AbstractAuthProviderClient
     private $thruwaySettings;
 
     function __construct(
-      ConfigFactoryInterface $configFactory,
-      UserAuthInterface $user_auth,
-      FloodInterface $flood,
-      EntityManagerInterface $entityManager
+        ConfigFactoryInterface $configFactory,
+        UserAuthInterface $user_auth,
+        FloodInterface $flood,
+        EntityManagerInterface $entityManager
     ) {
         $this->configFactory = $configFactory;
         $this->userAuth = $user_auth;
@@ -54,6 +54,7 @@ class AuthProvider extends AbstractAuthProviderClient
         $loop = \Drupal::service('thruway.loop');
         parent::__construct([$options["realm"]], $loop);
         $this->methodName = "drupal.{$options["realm"]}";
+
     }
 
 
@@ -112,7 +113,7 @@ class AuthProvider extends AbstractAuthProviderClient
 //        )
 //        ) {
         $accounts = $this->entityManager->getStorage('user')->loadByProperties(
-          array('name' => $username, 'status' => 1)
+            array('name' => $username, 'status' => 1)
         );
         $account = reset($accounts);
         if ($account) {
@@ -140,12 +141,12 @@ class AuthProvider extends AbstractAuthProviderClient
 //                        $this->flood->clear('thruway_auth.failed_login_user', $identifier);
 
                 return [
-                  "SUCCESS",
-                  [
-                    "authid" => $this->entityManager->getStorage('user')->load(
-                      $uid
-                    )->getEmail()
-                  ]
+                    "SUCCESS",
+                    [
+                        "authid" => $this->entityManager->getStorage('user')->load(
+                            $uid
+                        )->getEmail()
+                    ]
                 ];
 
             }
@@ -173,14 +174,14 @@ class AuthProvider extends AbstractAuthProviderClient
         $user = \JWT::decode($token, $key);
 
         $accounts = $this->entityManager->getStorage('user')->loadByProperties(
-          array('mail' => $user->mail, 'uid' => $user->uid, 'status' => 1)
+            array('mail' => $user->mail, 'uid' => $user->uid, 'status' => 1)
         );
 
         $account = reset($accounts);
         if ($account) {
             return [
-              "SUCCESS",
-              ["authid" => $user->mail]
+                "SUCCESS",
+                ["authid" => $user->mail]
             ];
         }
 
@@ -191,24 +192,38 @@ class AuthProvider extends AbstractAuthProviderClient
     protected function processAnonymous()
     {
 
-        if ($this->thruwaySettings->get('authentication')['allow_anonymous'] !== true){
+        if ($this->thruwaySettings->get('authentication')['allow_anonymous'] !== true) {
             return array("FAILURE");
         }
 
         $accounts = $this->entityManager->getStorage('user')->loadByProperties(
-          array('uid' => 0)
+            array('uid' => 0)
         );
 
         $account = reset($accounts);
         if ($account) {
             return [
-              "SUCCESS",
-              ["authid" => "anonymous"]
+                "SUCCESS",
+                ["authid" => "anonymous"]
             ];
         }
 
 
         return array("FAILURE");
+    }
+
+    public function onSessionStart($session, $transport)
+    {
+
+        parent::onSessionStart($session, $transport);
+
+        $loop = $this->getLoop();
+
+        $loop->addPeriodicTimer(30, function () use ($session, $loop) {
+            $this->getLogger()->info("Sending a Ping from auth provider\n");
+            $session->ping(5);
+            $loop->tick();
+        });
     }
 
 } 
