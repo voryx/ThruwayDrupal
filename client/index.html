@@ -4,63 +4,62 @@
 <head>
     <script src="autobahn.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.min.js"></script>
     <script src="thruway.js"></script>
 
 </head>
 
 <body ng-app="MyApp">
 
-<div ng-view></div>
+<drupal-auth></drupal-auth>
+
+<div ng-controller="MyController">
+    <ul>
+        <li ng-repeat="page in pages">
+            <div>
+                <strong>{{ page.title[0].value }}</strong>
+            </div>
+            <div>
+                <pre>{{ page.body[0].value }}</pre>
+            </div>
+            <button ng-click="page.edit = !page.edit">edit</button>
+            <button ng-click="page.$delete()">delete</button>
+            <!--<button ng-click="page.$getRelated()">get related</button>-->
+            <div ng-show="page.edit">
+                <div><label>Title</label>
+                    <input type="text"
+                           ng-model="page.title[0].value"
+                           ng-blur="page.$save()">
+                </div>
+                <div>
+                    <label>Body</label>
+                    <textarea ng-model="page.body[0].value"
+                              ng-blur="page.$save()"></textarea>
+                </div>
+            </div>
+            <hr/>
+        </li>
+    </ul>
+
+    <button ng-click="pages.$add()">Add</button>
+</div>
 
 
 <script>
-    var myApp = angular.module("MyApp", ["thruway", 'ngRoute']);
 
-    function MyController($scope, $thruway, $location) {
+    var myApp = angular.module("MyApp", ["thruway"]);
 
-        $scope.messages = $thruway('entity.node.page').getList();
+    myApp.controller('MyController', function ($scope, $thruway) {
 
-//        $scope.articles = new $thruway('entity.node.article');
+        //Bind the Drupal Entity node.pages to $scope.pages
+        $scope.pages = $thruway('entity.node.page').getList();
 
-        $scope.$on("thruway.auth", function (event, message) {
-            $location.path('/login').replace();
-            $scope.$apply();
-        });
-
-    }
-
-    function LoginCtrl($scope) {
-
-        $scope.login = function (user) {
-            $scope.$emit("thruway.login", user);
-        };
-
-    }
-
-
-    myApp.config(['$routeProvider', function ($routeProvider) {
-
-        $routeProvider
-                .when('/', {
-                    templateUrl: 'partials/main.html',
-                    controller: 'MyController'
-                })
-                .when('/login', {
-                    templateUrl: 'partials/login.html',
-                    controller: 'LoginCtrl'
-                })
-                .otherwise({
-                    redirectTo: '/'
-                });
-    }]);
-
+    });
 
     myApp.config(function ($provide) {
         $provide.decorator('thruwaySettings', function ($delegate) {
             return {
-                url: "ws://demo.thruway.ws:9090",
-                realm: 'drupalrealm'
+                url: "ws://demo.thruway.ws:9090", //The WAMP Router.  Change this if you're running your own WAMP Router
+                realm: 'drupalrealm'  //Change this to the realm set within Drupal's thruway.settings
             }
         });
     });

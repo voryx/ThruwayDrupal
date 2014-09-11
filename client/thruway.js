@@ -47,6 +47,7 @@
             connection.onopen = function (sess, details) {
                 var call;
                 session = sess;
+                $rootScope.$broadcast("thruway.open", {session: sess, detials: details});
                 $rootScope.$emit("thruway.open", details);
 
                 baseObject = new ThruwayObject($q, session, thruwayIndex);
@@ -452,7 +453,7 @@
     /**
      * Authentication
      */
-    thruwayApp.factory("drupalAuth", ["$q", "$rootScope", "$window", "$location", function ($q, $rootScope, $window, $location) {
+    thruwayApp.factory("drupalAuth", ["$q", "$rootScope", "$window", function ($q, $rootScope, $window) {
 
         return {
             authenticate: function (session) {
@@ -461,20 +462,29 @@
                     return $q.when($window.localStorage.token);
                 }
 
+                //get the drupalAuth scope from the directive
+                var loginForm = angular.element(document.querySelector('drupal-auth')).isolateScope();
+
+                //If there is no drupalAuth directive available, we assume that they're anonymous
+                if (loginForm === undefined) {
+                    console.log("Didn't find a drupal-auth form, so assuming anonymous");
+                    return "anonymous";
+                }
+
                 var deferred = $q.defer();
-                var lastPath = $location.$$path;
-                var loginInfo;
+                var user;
 
-                $rootScope.$broadcast("thruway.auth", session);
+                loginForm.show = true;
+                loginForm.$apply();
+                loginForm.login = function (u) {
+                    user = u;
+                    deferred.resolve(user);
+                    loginForm.show = false;
+                };
 
-                $rootScope.$on("thruway.login", function (event, message) {
-                    loginInfo = message;
-                    deferred.resolve(loginInfo);
-                    $location.path(lastPath).replace();
-                });
 
                 $rootScope.$on("thruway.open", function (event, message) {
-                    session.call("utils.utils.generateToken", [loginInfo.user, loginInfo.pass]).then(function (token) {
+                    session.call("utils.utils.generateToken", [user.user, user.pass]).then(function (token) {
                         //save the token
                         $window.localStorage.token = token;
                     });
@@ -488,4 +498,15 @@
         };
 
     }]);
+
+    thruwayApp.directive("drupalAuth", function () {
+        return {
+            restrict: "EA",
+            scope: {},
+            template: '<form ng-if="show"><input ng-model="user.user" id="username" type="text" placeholder="Username" autofocus required><input ng-model="user.pass" id="password" type="password" placeholder="Password" required><button ng-click="login(user)">Login</button></form>',
+            controller: function ($scope) {
+                $scope.show = false;
+            }
+        };
+    });
 })();
